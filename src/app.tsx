@@ -19,6 +19,7 @@ function App() {
   // Set the user's name in the store when they log in
   useEffect(() => {
     if (auth.user?.access_token) {
+      console.log("[App] Token renewed");
       dispatch(setAccessToken(auth.user.access_token));
     }
   }, [auth.user?.access_token, dispatch]);
