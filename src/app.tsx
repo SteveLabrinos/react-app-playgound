@@ -7,7 +7,6 @@ function App() {
       <div className="sticky top-0">
         <NavigationMenu />
       </div>
-      foo
       <div className="flex w-full h-full">
         <Outlet />
       </div>
