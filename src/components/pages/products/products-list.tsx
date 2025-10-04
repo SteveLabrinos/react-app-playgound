@@ -13,14 +13,16 @@ import {
 } from "@/components/ui/card.tsx";
 import EmptyState from "@/components/layouts/empty-state.tsx";
 import ProductCard from "@/components/pages/products/product-card.tsx";
+import { useAppSelector } from "@/hooks/rtk-hooks.ts";
 
 export default function ProductsList() {
+  const { context } = useAppSelector((state) => state.application);
   const {
     data: products,
     error,
     isLoading,
   } = useListProductsQuery({
-    context: "MAIN",
+    context,
   } as ListProductsApiArg);
 
   if (isLoading) return <Loading />;

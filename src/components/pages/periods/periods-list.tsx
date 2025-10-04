@@ -13,27 +13,29 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import PeriodCard from "@/components/pages/periods/period-card.tsx";
+import { useAppSelector } from "@/hooks/rtk-hooks.ts";
 
 export default function PeriodsList() {
+  const { context } = useAppSelector((state) => state.application);
   const {
     data: periods,
     error,
     isLoading,
   } = useListPeriodsQuery({
-    context: "MAIN",
+    context,
   } as ListPeriodsApiArg);
 
   if (isLoading) return <Loading />;
   if (error)
     return (
       <ErrorCard
-        title="Error Loading Products"
-        description={"Products failed to load due to connection issues."}
+        title="Error Loading Periods"
+        description={"Periods failed to load due to connection issues."}
       />
     );
 
   if (!periods || periods.length === 0)
-    return <EmptyState description="No Products Found" />;
+    return <EmptyState description="No Periods Found" />;
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
