@@ -1,3 +1,9 @@
+import PeriodsList from "@/components/pages/periods/periods-list.tsx";
+
 export default function PeriodsPage() {
-  return <div>Periods Page</div>;
+  return (
+    <div>
+      <PeriodsList />
+    </div>
+  );
 }
