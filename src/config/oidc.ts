@@ -14,8 +14,8 @@ const getUILocale = () => {
 const userManager = new UserManager({
   authority: import.meta.env.VITE_AUTHORITY,
   client_id: import.meta.env.VITE_CLIENT_ID,
-  redirect_uri: `${window.location.origin}${window.location.pathname}`,
-  post_logout_redirect_uri: window.location.origin,
+  redirect_uri: `${window.location.origin}/`,
+  post_logout_redirect_uri: `${window.location.origin}/`,
   userStore: new WebStorageStateStore({ store: window.sessionStorage }),
   response_type: "code",
   response_mode: "query",
@@ -32,7 +32,7 @@ const onSigninCallback = () => {
 };
 
 const onSignoutCallback = () => {
-  window.history.replaceState({}, document.title, window.location.pathname);
+  window.history.replaceState({}, document.title, "/");
 };
 
 export const oidc = { userManager, onSigninCallback, onSignoutCallback };

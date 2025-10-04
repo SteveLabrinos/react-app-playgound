@@ -16,27 +16,22 @@ function App() {
     }
   }, [auth.isLoading, auth.isAuthenticated, auth]);
 
-  // Set the user's name in the store when they log in
+  // Sync access token with the store
   useEffect(() => {
     if (auth.user?.access_token) {
       console.log("[App] Token renewed");
       dispatch(setAccessToken(auth.user.access_token));
-    }
-  }, [auth.user?.access_token, dispatch]);
-
-  // Handle logout
-  useEffect(() => {
-    if (!auth.isAuthenticated && !auth.user) {
+    } else if (!auth.isAuthenticated) {
       dispatch(clearAccessToken());
     }
-  }, [auth.isAuthenticated, auth.user, dispatch]);
+  }, [auth.isAuthenticated, auth.user?.access_token, dispatch]);
 
   return (
     <div className="flex flex-col h-screen w-screen gap-0 overflow-hidden">
-      <div className="sticky top-0">
+      <div className="sticky top-0 z-50">
         <NavigationMenu />
       </div>
-      <div className="flex w-full h-full">
+      <div className="flex w-full h-full overflow-auto">
         <Outlet />
       </div>
     </div>
