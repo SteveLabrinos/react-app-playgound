@@ -1,12 +1,10 @@
 import { useAuth } from "react-oidc-context";
-import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 import { useCallback, useEffect, useRef } from "react";
-import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
 
 interface UseTokenRenewalOptions {
   renewBeforeExpiration: number;
   checkInterval: number;
-  activityEvents?: string[];
+  iframeFocusCheckInterval?: number;
 }
 
 /**
@@ -25,23 +23,25 @@ interface UseTokenRenewalOptions {
  *          whether the token needs renewal. Default is 30 seconds.
  *        - activityEvents: An array of DOM event types that indicate user activity,
  *          such as "mousedown" or "keydown". Default includes these events.
+ *        - iframeFocusCheckInterval: The time interval in seconds for periodic checks of
+ *          whether the iframe is focused. Default is 60 seconds.
  *
  * @throws RuntimeException If token renewal fails due to authentication errors
  *                          or network issues during the process.
  */
+const activityEvents = ["mousedown", "keydown"];
+
 export const useTokenRenewal = ({
   renewBeforeExpiration = 90,
   checkInterval = 30,
-  activityEvents = ["mousedown", "keydown"],
+  iframeFocusCheckInterval = 60,
 }: UseTokenRenewalOptions) => {
   const auth = useAuth();
-  const dispatch = useAppDispatch();
   const lastActivityTime = useRef(Math.floor(Date.now() / 1000));
   const isRenewing = useRef(false);
 
   /** Updates the last activity time to the current timestamp */
   const updateLastActivity = () => {
-    console.log("[Token] Last activity updated");
     lastActivityTime.current = Math.floor(Date.now() / 1000);
   };
 
@@ -81,22 +81,24 @@ export const useTokenRenewal = ({
     try {
       const user = await auth.signinSilent();
 
-      if (user && user.access_token) {
-        console.log("[Token] Token renewed successfully");
-        dispatch(setAccessToken(user.access_token));
-      } else {
-        console.warn("[Token] Renewal returned no token");
-        dispatch(clearAccessToken());
+      if (!user || !user.access_token) {
+        console.warn("[Token] User or access token is missing after renewal");
         await auth.signoutRedirect();
+        return;
       }
     } catch (error) {
       console.error("[Token] Error renewing token:", error);
-      dispatch(clearAccessToken());
       await auth.signoutRedirect();
     } finally {
       isRenewing.current = false;
     }
-  }, [auth, needsRenewal, dispatch]);
+  }, [auth, needsRenewal]);
+
+  const checkIframeFocus = useCallback(() => {
+    if (document.activeElement?.tagName === "IFRAME") {
+      updateLastActivity();
+    }
+  }, []);
 
   /** Listens for user activity events to update the last activity time */
   useEffect(() => {
@@ -114,11 +116,20 @@ export const useTokenRenewal = ({
         });
       });
     };
-  }, [activityEvents]);
+  }, []);
+
+  /** Periodic checks for iframe focus */
+  useEffect(() => {
+    const intervalId = setInterval(
+      checkIframeFocus,
+      iframeFocusCheckInterval * 1000,
+    );
+
+    return () => clearInterval(intervalId);
+  }, [checkIframeFocus, iframeFocusCheckInterval]);
 
   /** Periodic checks for token renewal */
   useEffect(() => {
-    void attemptTokenRenewal();
     const intervalId = setInterval(() => {
       void attemptTokenRenewal();
     }, checkInterval * 1000);
