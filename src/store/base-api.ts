@@ -43,12 +43,12 @@ const baseQueryInterceptor: BaseQueryFn<
         // Retry the original request with the new token
         return await baseQuery(args, api, extraOptions);
       } else {
-        console.warn("User or access token is missing after renewal");
+        console.warn("[API] User or access token is missing after renewal");
         api.dispatch(clearAccessToken());
         await oidc.userManager.signinRedirect();
       }
     } catch (error) {
-      console.error("Error silently renewing token:", error);
+      console.error("[API] Error silently renewing token:", error);
       api.dispatch(clearAccessToken());
       await oidc.userManager.signinRedirect();
     }
