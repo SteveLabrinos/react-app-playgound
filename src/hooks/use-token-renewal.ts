@@ -1,5 +1,7 @@
 import { useAuth } from "react-oidc-context";
 import { useCallback, useEffect, useRef } from "react";
+import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
+import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 
 interface UseTokenRenewalOptions {
   renewBeforeExpiration: number;
@@ -36,6 +38,7 @@ export const useTokenRenewal = ({
   checkInterval = 30,
   iframeFocusCheckInterval = 60,
 }: UseTokenRenewalOptions) => {
+  const dispatch = useAppDispatch();
   const auth = useAuth();
   const lastActivityTime = useRef(Math.floor(Date.now() / 1000));
   const isRenewing = useRef(false);
@@ -50,18 +53,6 @@ export const useTokenRenewal = ({
     if (!auth.user?.expires_at) return false;
 
     const tokenExpirationTime = auth.user?.expires_at - renewBeforeExpiration;
-    // TMP DEBUG
-    console.log(
-      "Token Expiration Date: ",
-      new Date(auth.user?.expires_at * 1000),
-    );
-    console.log("Now: ", new Date(Date.now()));
-    console.log("Token Renew Date: ", new Date(tokenExpirationTime * 1000));
-    console.log("Last Activity: ", new Date(lastActivityTime.current * 1000));
-    console.log(
-      "Needs Renewal: ",
-      lastActivityTime.current >= tokenExpirationTime,
-    );
 
     return lastActivityTime.current >= tokenExpirationTime;
   }, [auth.user?.expires_at, renewBeforeExpiration]);
@@ -81,18 +72,22 @@ export const useTokenRenewal = ({
     try {
       const user = await auth.signinSilent();
 
-      if (!user || !user.access_token) {
+      if (user && user.access_token) {
+        dispatch(setAccessToken(auth.user.access_token));
+      } else {
         console.warn("[Token] User or access token is missing after renewal");
+        dispatch(clearAccessToken());
         await auth.signoutRedirect();
         return;
       }
     } catch (error) {
       console.error("[Token] Error renewing token:", error);
+      dispatch(clearAccessToken());
       await auth.signoutRedirect();
     } finally {
       isRenewing.current = false;
     }
-  }, [auth, needsRenewal]);
+  }, [auth, dispatch, needsRenewal]);
 
   const checkIframeFocus = useCallback(() => {
     if (document.activeElement?.tagName === "IFRAME") {

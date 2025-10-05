@@ -1,13 +1,11 @@
 import NavigationMenu from "@/components/navigation/navigation-menu.tsx";
 import { Outlet } from "react-router";
-import { useAuth } from "react-oidc-context";
-import { useEffect } from "react";
-import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
-import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
+import { useAuth, useAutoSignin } from "react-oidc-context";
 import { useTokenRenewal } from "@/hooks/use-token-renewal.ts";
+import Loading from "@/components/layouts/loading.tsx";
+import ErrorCard from "@/components/layouts/error-card.tsx";
 
 function App() {
-  const dispatch = useAppDispatch();
   const auth = useAuth();
 
   useTokenRenewal({
@@ -15,22 +13,13 @@ function App() {
     checkInterval: 30,
   });
 
-  // Redirect to the login page if the user is not authenticated
-  useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated) {
-      void auth.signinRedirect();
-    }
-  }, [auth.isLoading, auth.isAuthenticated, auth]);
+  const { isLoading, isAuthenticated, error } = useAutoSignin({
+    signinMethod: "signinRedirect",
+  });
 
-  // Sync access token with the store
-  useEffect(() => {
-    if (auth.user?.access_token) {
-      console.log("[App] Token sync");
-      dispatch(setAccessToken(auth.user.access_token));
-    } else if (!auth.isAuthenticated) {
-      dispatch(clearAccessToken());
-    }
-  }, [auth.isAuthenticated, auth.user?.access_token, dispatch]);
+  if (isLoading) return <Loading />;
+  if (error) return <ErrorCard title="Error" description={error.message} />;
+  if (!isAuthenticated) return auth.signinRedirect();
 
   return (
     <div className="flex flex-col h-screen w-screen gap-0 overflow-hidden">
