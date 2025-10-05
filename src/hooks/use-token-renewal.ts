@@ -3,12 +3,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
 import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 
-interface UseTokenRenewalOptions {
-  renewBeforeExpiration: number;
-  checkInterval: number;
-  iframeFocusCheckInterval?: number;
-}
-
 /**
  * Custom hook that manages token renewal for user authentication based on specific activity events,
  * expiration periods, and configurable intervals. This function ensures the token
@@ -32,12 +26,11 @@ interface UseTokenRenewalOptions {
  *                          or network issues during the process.
  */
 const activityEvents = ["mousedown", "keydown"];
+const renewBeforeExpiration = 90;
+const iframeFocusCheckInterval = 60;
+const checkInterval = 10;
 
-export const useTokenRenewal = ({
-  renewBeforeExpiration = 90,
-  checkInterval = 30,
-  iframeFocusCheckInterval = 60,
-}: UseTokenRenewalOptions) => {
+export const useTokenRenewal = () => {
   const dispatch = useAppDispatch();
   const auth = useAuth();
   const lastActivityTime = useRef(Math.floor(Date.now() / 1000));
@@ -55,7 +48,7 @@ export const useTokenRenewal = ({
     const tokenExpirationTime = auth.user?.expires_at - renewBeforeExpiration;
 
     return lastActivityTime.current >= tokenExpirationTime;
-  }, [auth.user?.expires_at, renewBeforeExpiration]);
+  }, [auth.user?.expires_at]);
 
   /** Attempts to renew the token silently */
   const attemptTokenRenewal = useCallback(async () => {
@@ -121,14 +114,15 @@ export const useTokenRenewal = ({
     );
 
     return () => clearInterval(intervalId);
-  }, [checkIframeFocus, iframeFocusCheckInterval]);
+  }, [checkIframeFocus]);
 
   /** Periodic checks for token renewal */
   useEffect(() => {
     const intervalId = setInterval(() => {
+      console.log("Attempting token renewal");
       void attemptTokenRenewal();
     }, checkInterval * 1000);
 
     return () => clearInterval(intervalId);
-  }, [attemptTokenRenewal, checkInterval]);
+  }, [attemptTokenRenewal]);
 };
