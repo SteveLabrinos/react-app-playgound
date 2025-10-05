@@ -1,4 +1,4 @@
-import { useAuth } from "react-oidc-context";
+import { useAuth, useAutoSignin } from "react-oidc-context";
 import { useCallback, useEffect, useRef } from "react";
 import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
 import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
@@ -36,6 +36,8 @@ export const useTokenRenewal = () => {
   const lastActivityTime = useRef(Math.floor(Date.now() / 1000));
   const isRenewing = useRef(false);
 
+  useAutoSignin({ signinMethod: "signinRedirect" });
+
   /** Updates the last activity time to the current timestamp */
   const updateLastActivity = () => {
     lastActivityTime.current = Math.floor(Date.now() / 1000);
@@ -66,7 +68,8 @@ export const useTokenRenewal = () => {
       const user = await auth.signinSilent();
 
       if (user && user.access_token) {
-        dispatch(setAccessToken(auth.user.access_token));
+        console.log("User", user);
+        dispatch(setAccessToken(user.access_token));
       } else {
         console.warn("[Token] User or access token is missing after renewal");
         dispatch(clearAccessToken());

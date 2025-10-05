@@ -1,12 +1,11 @@
 import NavigationMenu from "@/components/navigation/navigation-menu.tsx";
 import { Outlet } from "react-router";
-import { useAutoSignin } from "react-oidc-context";
 import { useTokenRenewal } from "@/hooks/use-token-renewal.ts";
+import { useSessionTimeout } from "@/hooks/use-session-timeout.ts";
 
 function App() {
   useTokenRenewal();
-
-  useAutoSignin({ signinMethod: "signinRedirect" });
+  useSessionTimeout();
 
   return (
     <div className="flex flex-col h-screen w-screen gap-0 overflow-hidden">
