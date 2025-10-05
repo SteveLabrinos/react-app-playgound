@@ -1,10 +1,9 @@
 import { useEffect, useRef } from "react";
-
-const iframeFocusCheckInterval = 60;
-const activityEvents = ["mousedown", "keydown"];
+import { authConfig } from "@/config/authorization.ts";
 
 export const useActivityTracker = () => {
   const lastActivityTime = useRef(Math.floor(Date.now() / 1000));
+  const { iframeFocusCheckInterval, activityEvents } = authConfig;
 
   useEffect(() => {
     /** Updates the last activity time to the current timestamp */
@@ -40,7 +39,7 @@ export const useActivityTracker = () => {
       });
       clearInterval(iFrameInterval);
     };
-  }, []);
+  }, [activityEvents, iframeFocusCheckInterval]);
 
   return lastActivityTime;
 };

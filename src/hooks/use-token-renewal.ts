@@ -3,15 +3,14 @@ import { useCallback, useEffect, useRef } from "react";
 import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
 import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 import { useActivityTracker } from "@/hooks/use-activity-tracker.ts";
-
-const renewBeforeExpiration = 60;
-const checkInterval = 10;
+import { authConfig } from "@/config/authorization.ts";
 
 export const useTokenRenewal = () => {
   const dispatch = useAppDispatch();
   const auth = useAuth();
   const lastActivityTime = useActivityTracker();
   const isRenewing = useRef(false);
+  const { renewBeforeExpiration, checkInterval } = authConfig;
 
   useAutoSignin({ signinMethod: "signinRedirect" });
 
@@ -22,7 +21,7 @@ export const useTokenRenewal = () => {
     const tokenExpirationTime = auth.user?.expires_at - renewBeforeExpiration;
 
     return lastActivityTime.current >= tokenExpirationTime;
-  }, [auth.user?.expires_at, lastActivityTime]);
+  }, [auth.user?.expires_at, lastActivityTime, renewBeforeExpiration]);
 
   /** Attempts to renew the token silently */
   const attemptTokenRenewal = useCallback(async () => {
@@ -41,7 +40,6 @@ export const useTokenRenewal = () => {
 
       if (user?.access_token) {
         console.log("[Token] Token renewed successfully");
-        console.log("User", user);
         dispatch(setAccessToken(user.access_token));
       } else {
         console.warn("[Token] Renewal returned no token");
@@ -61,10 +59,9 @@ export const useTokenRenewal = () => {
   /** Periodic checks for token renewal */
   useEffect(() => {
     const intervalId = setInterval(() => {
-      console.log("Attempting token renewal");
       void attemptTokenRenewal();
     }, checkInterval * 1000);
 
     return () => clearInterval(intervalId);
-  }, [attemptTokenRenewal]);
+  }, [attemptTokenRenewal, checkInterval]);
 };

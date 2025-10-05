@@ -1,27 +1,34 @@
 import { useAuth } from "react-oidc-context";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 import { clearAccessToken } from "@/store/slices/auth-slice.ts";
-import { useActivityTracker } from "@/hooks/use-activity-tracker.ts";
-
-const sessionTimeout = 120; // 2 minutes tmp
-const checkInterval = 10;
+import { authConfig, JwtPayload } from "@/config/authorization.ts";
 
 export const useSessionTimeout = () => {
   const dispatch = useAppDispatch();
   const auth = useAuth();
-  const lastActivityTime = useActivityTracker();
+  const { checkInterval } = authConfig;
+
+  const sessionExpiresAt = useMemo(() => {
+    if (!auth.user?.refresh_token) return null;
+
+    try {
+      const [, payload] = auth.user.refresh_token.split(".");
+      const { exp } = JSON.parse(atob(payload)) as JwtPayload;
+      return exp;
+    } catch (error) {
+      console.error("[Session] Error decoding token:", error);
+      return null;
+    }
+  }, [auth.user?.refresh_token]);
 
   useEffect(() => {
     if (!auth.isAuthenticated) return;
 
     const checkSessionTimeout = async () => {
-      const timeSinceLastActivity =
-        Math.floor(Date.now() / 1000) - lastActivityTime.current;
+      const now = Math.floor(Date.now() / 1000);
 
-      console.log("Checking session timeout", timeSinceLastActivity);
-
-      if (timeSinceLastActivity >= sessionTimeout) {
+      if (sessionExpiresAt && now > sessionExpiresAt) {
         dispatch(clearAccessToken());
         await auth.removeUser();
         await auth.signinRedirect();
@@ -33,5 +40,5 @@ export const useSessionTimeout = () => {
     }, checkInterval * 1000);
 
     return () => clearInterval(sessionCheckInterval);
-  }, [auth, dispatch, lastActivityTime]);
+  }, [auth, checkInterval, dispatch, sessionExpiresAt]);
 };
