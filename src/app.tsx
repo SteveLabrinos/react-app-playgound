@@ -4,10 +4,16 @@ import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/hooks/rtk-hooks.ts";
 import { clearAccessToken, setAccessToken } from "@/store/slices/auth-slice.ts";
+import { useTokenRenewal } from "@/hooks/use-token-renewal.ts";
 
 function App() {
   const dispatch = useAppDispatch();
   const auth = useAuth();
+
+  useTokenRenewal({
+    renewBeforeExpiration: 90,
+    checkInterval: 30,
+  });
 
   // Redirect to the login page if the user is not authenticated
   useEffect(() => {
@@ -19,7 +25,7 @@ function App() {
   // Sync access token with the store
   useEffect(() => {
     if (auth.user?.access_token) {
-      console.log("[App] Token renewed");
+      console.log("[App] Token sync");
       dispatch(setAccessToken(auth.user.access_token));
     } else if (!auth.isAuthenticated) {
       dispatch(clearAccessToken());

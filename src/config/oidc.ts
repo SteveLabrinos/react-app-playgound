@@ -22,7 +22,7 @@ const userManager = new UserManager({
   loadUserInfo: true,
   monitorSession: true,
   scope: "openid email profile",
-  automaticSilentRenew: true,
+  automaticSilentRenew: false,
   silentRequestTimeoutInSeconds: 10,
   ui_locales: getUILocale(),
 });
